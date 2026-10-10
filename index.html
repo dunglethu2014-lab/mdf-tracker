@@ -1,0 +1,2225 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>VietCAD MDF Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  canvas.chart-canvas { width: 100% !important; max-height: 280px; }
+  /* Layout: side-nav + main content area, stacking on mobile */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-alt: #f4f5f7;
+    --border: #e2e4e9;
+    --fg: #1a1d23;
+    --fg-muted: #6b7080;
+    --fg-dim: #9ca0ad;
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --accent-dark: #1d4ed8;
+    --green: #16a34a;
+    --green-light: #dcfce7;
+    --red: #dc2626;
+    --red-light: #fee2e2;
+    --amber: #d97706;
+    --amber-light: #fef3c7;
+    --purple: #7c3aed;
+    --purple-light: #ede9fe;
+    --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-alt: #22253a;
+      --border: #2d3148;
+      --fg: #e8eaf0;
+      --fg-muted: #8b8fa0;
+      --fg-dim: #5a5f72;
+      --accent: #3b82f6;
+      --accent-light: #1e293b;
+      --accent-dark: #60a5fa;
+      --green: #22c55e;
+      --green-light: #052e16;
+      --red: #ef4444;
+      --red-light: #2d0a0a;
+      --amber: #f59e0b;
+      --amber-light: #2d1f04;
+      --purple: #8b5cf6;
+      --purple-light: #1a0f2e;
+      --shadow: 0 1px 3px rgba(0,0,0,0.3);
+      --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface-alt: #22253a;
+    --border: #2d3148;
+    --fg: #e8eaf0;
+    --fg-muted: #8b8fa0;
+    --fg-dim: #5a5f72;
+    --accent: #3b82f6;
+    --accent-light: #1e293b;
+    --accent-dark: #60a5fa;
+    --green: #22c55e;
+    --green-light: #052e16;
+    --red: #ef4444;
+    --red-light: #2d0a0a;
+    --amber: #f59e0b;
+    --amber-light: #2d1f04;
+    --purple: #8b5cf6;
+    --purple-light: #1a0f2e;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.4);
+    color-scheme: dark;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  * { box-sizing: border-box; }
+
+  .app {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 240px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-brand {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  .sidebar-brand h1 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0 0 2px;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+
+  .sidebar-brand small {
+    font-size: 11px;
+    color: var(--fg-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: var(--fg-muted);
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+
+  .nav-item:hover { color: var(--fg); background: var(--surface-alt); }
+  .nav-item.active { color: var(--accent); background: var(--accent-light); font-weight: 600; }
+  .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* Mobile nav toggle */
+  .mobile-header {
+    display: none;
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 100;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mobile-header h1 {
+    font-size: 15px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--accent);
+  }
+
+  .hamburger {
+    background: none;
+    border: none;
+    color: var(--fg);
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  /* Main content */
+  .main {
+    flex: 1;
+    min-width: 0;
+    padding: 24px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .page-header h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+  }
+
+  .page-header p {
+    font-size: 13px;
+    color: var(--fg-muted);
+    margin: 0;
+  }
+
+  .quarter-filter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .quarter-filter label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .quarter-filter select {
+    padding: 6px 28px 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--fg);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7080' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+
+  /* Stat cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    box-shadow: var(--shadow);
+  }
+
+  .stat-card .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-card .value {
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-card .sub {
+    font-size: 12px;
+    color: var(--fg-muted);
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-card.green .value { color: var(--green); }
+  .stat-card.red .value { color: var(--red); }
+  .stat-card.amber .value { color: var(--amber); }
+  .stat-card.purple .value { color: var(--purple); }
+  .stat-card.accent .value { color: var(--accent); }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 6px;
+    background: var(--surface-alt);
+    border-radius: 3px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+
+  /* Table */
+  .table-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+    margin-bottom: 24px;
+  }
+
+  .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .table-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--fg-muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-alt);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface-alt); }
+
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .badge-green { background: var(--green-light); color: var(--green); }
+  .badge-red { background: var(--red-light); color: var(--red); }
+  .badge-amber { background: var(--amber-light); color: var(--amber); }
+  .badge-purple { background: var(--purple-light); color: var(--purple); }
+  .badge-accent { background: var(--accent-light); color: var(--accent); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg);
+    font-family: inherit;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn:hover { background: var(--surface-alt); }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .btn-primary:hover { background: var(--accent-dark); }
+
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+  .btn-danger { color: var(--red); }
+  .btn-danger:hover { background: var(--red-light); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 24px;
+  }
+
+  .modal h3 {
+    font-size: 17px;
+    font-weight: 700;
+    margin: 0 0 18px;
+  }
+
+  .form-group {
+    margin-bottom: 14px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--bg);
+    color: var(--fg);
+  }
+
+  .form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  /* Charts */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px;
+    box-shadow: var(--shadow);
+  }
+
+  .chart-card h4 {
+    font-size: 13px;
+    font-weight: 600;
+    margin: 0 0 14px;
+    color: var(--fg-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bar-label {
+    width: 80px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 24px;
+    background: var(--surface-alt);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    min-width: fit-content;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--fg-muted);
+  }
+
+  .empty-state svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.4; }
+  .empty-state p { font-size: 13px; margin: 0 0 16px; }
+
+  /* Loading */
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    color: var(--fg-muted);
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--fg);
+    color: var(--bg);
+    padding: 10px 18px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    z-index: 300;
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+  }
+
+  .tab-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--fg-muted);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: -1px;
+    transition: all 0.15s;
+  }
+
+  .tab-btn:hover { color: var(--fg); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .section[hidden] { display: none !important; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .sidebar { display: none; position: fixed; z-index: 150; height: 100vh; left: 0; top: 0; }
+    .sidebar.open { display: flex; }
+    .mobile-header { display: flex; }
+    .main { padding: 16px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .chart-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <h1>VietCAD MDF</h1>
+      <small>Marketing Fund Tracker</small>
+    </div>
+    <button class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Tổng quan
+    </button>
+    <button class="nav-item" data-page="mdf" onclick="switchPage('mdf')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Quỹ MDF
+    </button>
+    <button class="nav-item" data-page="ads" onclick="switchPage('ads')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      Chi phí Ads
+    </button>
+    <button class="nav-item" data-page="events" onclick="switchPage('events')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Chi phí Event
+    </button>
+    <button class="nav-item" data-page="settings" onclick="switchPage('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Cài đặt
+    </button>
+  </aside>
+
+  <!-- Mobile Header -->
+  <div class="mobile-header" id="mobileHeader">
+    <button class="hamburger" onclick="toggleSidebar()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
+    <h1>VietCAD MDF Tracker</h1>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main" id="mainContent">
+    <!-- Loading state -->
+    <div class="loading" id="loadingState">
+      <div class="spinner"></div>
+      Đang tải dữ liệu...
+    </div>
+
+    <!-- Dashboard -->
+    <div class="section" id="page-dashboard" hidden>
+      <div class="page-header">
+        <div>
+          <h2>Tổng quan MDF & Marketing</h2>
+          <p id="dashSubtitle">FY26–FY27 · Tất cả quý</p>
+        </div>
+        <div class="quarter-filter">
+          <label>Quý</label>
+          <select id="qfDash" onchange="setQuarter(this.value)"></select>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="dashStats"></div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h4>Phân bổ MDF</h4>
+          <canvas id="chartDonut" class="chart-canvas" style="max-height:240px"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4>Chi phí theo hãng</h4>
+          <canvas id="chartVendor" class="chart-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h4>Chi tiêu theo quý</h4>
+          <canvas id="chartQuarter" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4>CPC & CPL trung bình theo hãng</h4>
+          <canvas id="chartCpcCpl" class="chart-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h4>Hiệu quả quảng cáo tổng hợp</h4>
+          <div id="efficiencyTable"></div>
+        </div>
+        <div class="chart-card">
+          <h4>Leads theo hãng</h4>
+          <canvas id="chartLeads" class="chart-canvas" style="max-height:240px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- MDF Page -->
+    <div class="section" id="page-mdf" hidden>
+      <div class="page-header">
+        <div>
+          <h2>Quỹ MDF (Marketing Development Fund)</h2>
+          <p>Theo dõi MDF từ hãng · Claim & thanh toán</p>
+        </div>
+        <div class="quarter-filter">
+          <label>Quý</label>
+          <select id="qfMdf" onchange="setQuarter(this.value)"></select>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="mdfStats"></div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h4>MDF theo hãng</h4>
+          <canvas id="chartMdfVendor" class="chart-canvas" style="max-height:240px"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4>MDF theo quý</h4>
+          <canvas id="chartMdfQuarter" class="chart-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <h3>Danh sách MDF Claims</h3>
+          <button class="btn btn-primary btn-sm" onclick="openModal('mdf')">+ Thêm MDF</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Claim ID</th>
+              <th>Hãng</th>
+              <th>Quý</th>
+              <th>Chiến dịch</th>
+              <th>Số tiền</th>
+              <th>Tiền tệ</th>
+              <th>Quy đổi VNĐ</th>
+              <th>Trạng thái</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="mdfTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Ads Page -->
+    <div class="section" id="page-ads" hidden>
+      <div class="page-header">
+        <div>
+          <h2>Chi phí Quảng cáo (Ads)</h2>
+          <p>Facebook Ads · Tất cả hãng</p>
+        </div>
+        <div class="quarter-filter">
+          <label>Quý</label>
+          <select id="qfAds" onchange="setQuarter(this.value)"></select>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="adsStats"></div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h4>Chi phí Ads theo hãng</h4>
+          <canvas id="chartAdsByVendor" class="chart-canvas"></canvas>
+        </div>
+        <div class="chart-card">
+          <h4>Funnel: Hiển thị → Click → Lead</h4>
+          <canvas id="chartFunnel" class="chart-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="tab-bar" id="adsTabBar">
+        <button class="tab-btn active" onclick="switchAdsTab('all')">Tất cả</button>
+        <button class="tab-btn" onclick="switchAdsTab('Running')">Đang chạy</button>
+        <button class="tab-btn" onclick="switchAdsTab('Completed')">Hoàn thành</button>
+      </div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <h3>Danh sách chiến dịch Ads</h3>
+          <button class="btn btn-primary btn-sm" onclick="openModal('ads')">+ Thêm Campaign</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Hãng</th>
+              <th>Chiến dịch</th>
+              <th>Quý</th>
+              <th>Chi phí (VNĐ)</th>
+              <th>Hiển thị</th>
+              <th>Click</th>
+              <th>Leads</th>
+              <th>CPC</th>
+              <th>Trạng thái</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="adsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Events Page -->
+    <div class="section" id="page-events" hidden>
+      <div class="page-header">
+        <div>
+          <h2>Chi phí Sự kiện (Events)</h2>
+          <p>Sự kiện & Webinar</p>
+        </div>
+        <div class="quarter-filter">
+          <label>Quý</label>
+          <select id="qfEvents" onchange="setQuarter(this.value)"></select>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="eventStats"></div>
+
+      <div class="table-container">
+        <div class="table-header">
+          <h3>Danh sách sự kiện</h3>
+          <button class="btn btn-primary btn-sm" onclick="openModal('events')">+ Thêm sự kiện</button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Mã PO</th>
+              <th>Tên sự kiện</th>
+              <th>Quý</th>
+              <th>Ngày</th>
+              <th>Loại</th>
+              <th>Tổng PO</th>
+              <th>Ads trong PO</th>
+              <th>Chi phí thuần</th>
+              <th>Ghi chú</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="eventsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div class="section" id="page-settings" hidden>
+      <div class="page-header">
+        <h2>Cài đặt</h2>
+        <p>Tỷ giá & cấu hình hệ thống</p>
+      </div>
+
+      <div class="table-container" style="max-width: 500px">
+        <div class="table-header"><h3>Tỷ giá</h3></div>
+        <div style="padding: 18px">
+          <div class="form-group">
+            <label>Tỷ giá USD/VNĐ</label>
+            <input type="number" id="rateUSD" value="26470" onchange="saveSettings()">
+          </div>
+          <div class="form-group">
+            <label>Tỷ giá AUD/VNĐ</label>
+            <input type="number" id="rateAUD" value="17500" onchange="saveSettings()">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="saveSettings()">Lưu</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Import/Export -->
+      <div class="table-container" style="max-width: 600px; margin-top: 20px">
+        <div class="table-header"><h3>Import / Export dữ liệu</h3></div>
+        <div style="padding: 18px">
+          <p style="color: var(--fg-muted); font-size: 13px; margin: 0 0 14px">
+            Import file Excel (.xlsx) với 3 sheet: <b>MDF</b>, <b>ADS</b>, <b>EVENTS</b>.
+            Hoặc export toàn bộ dữ liệu hiện tại ra file Excel.
+          </p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap">
+            <label class="btn btn-primary" style="cursor:pointer">
+              📥 Import Excel
+              <input type="file" accept=".xlsx,.xls" onchange="importExcel(this)" hidden>
+            </label>
+            <button class="btn" onclick="exportExcel()" style="background:var(--green);color:#fff">📤 Export Excel</button>
+            <button class="btn" onclick="clearAllData()" style="background:var(--red);color:#fff">🗑 Xóa toàn bộ</button>
+          </div>
+          <div id="importStatus" style="margin-top: 12px; font-size: 13px; color: var(--fg-muted)" hidden></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal container -->
+<div id="modalContainer"></div>
+
+<script>
+// ── LocalStorage DB fallback (mimics Claude db API) ──
+class LocalDB {
+  constructor() { this._prefix = 'mdf_'; this._listeners = {}; }
+  _key(path) { return this._prefix + path; }
+  _getAll(collection) {
+    try {
+      const raw = localStorage.getItem(this._key(collection));
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  }
+  _setAll(collection, items) {
+    try { localStorage.setItem(this._key(collection), JSON.stringify(items)); } catch {}
+    this._notify(collection);
+  }
+  _notify(collection) {
+    (this._listeners[collection] || []).forEach(fn => {
+      const items = this._getAll(collection);
+      fn({ docs: items.map(it => ({ id: it._id, exists: true, data: () => { const d = {...it}; delete d._id; return d; } })) });
+    });
+  }
+  _genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  doc(path) {
+    const self = this;
+    const parts = path.split('/');
+    if (parts.length === 2) {
+      const [col, id] = parts;
+      return {
+        set(data) { return self._docSet(col, id, data); },
+        delete() { return self._docDelete(col, id); },
+        onSnapshot(fn, errFn) {
+          // For config/settings doc
+          try {
+            const raw = localStorage.getItem(self._key(path));
+            const d = raw ? JSON.parse(raw) : null;
+            fn({ exists: !!d, data: () => d });
+          } catch { fn({ exists: false, data: () => null }); }
+          const key = path;
+          if (!self._listeners[key]) self._listeners[key] = [];
+          self._listeners[key].push(fn);
+          return () => { self._listeners[key] = (self._listeners[key]||[]).filter(f => f !== fn); };
+        }
+      };
+    }
+    return { set() {}, delete() {} };
+  }
+  _docSet(col, id, data) {
+    // Check if it's a single-doc path like config/settings
+    if (col === 'config') {
+      try { localStorage.setItem(this._key(col + '/' + id), JSON.stringify(data)); } catch {}
+      (this._listeners[col + '/' + id] || []).forEach(fn => fn({ exists: true, data: () => data }));
+      return Promise.resolve();
+    }
+    const items = this._getAll(col);
+    const idx = items.findIndex(i => i._id === id);
+    if (idx >= 0) items[idx] = { ...data, _id: id };
+    else items.push({ ...data, _id: id });
+    this._setAll(col, items);
+    return Promise.resolve();
+  }
+  _docDelete(col, id) {
+    if (col === 'config') {
+      try { localStorage.removeItem(this._key(col + '/' + id)); } catch {}
+      return Promise.resolve();
+    }
+    const items = this._getAll(col).filter(i => i._id !== id);
+    this._setAll(col, items);
+    return Promise.resolve();
+  }
+  collection(name) {
+    const self = this;
+    return {
+      add(data) {
+        const id = self._genId();
+        const items = self._getAll(name);
+        items.push({ ...data, _id: id });
+        self._setAll(name, items);
+        return Promise.resolve(id);
+      },
+      onSnapshot(fn, errFn) {
+        const items = self._getAll(name);
+        fn({ docs: items.map(it => ({ id: it._id, exists: true, data: () => { const d = {...it}; delete d._id; return d; } })) });
+        if (!self._listeners[name]) self._listeners[name] = [];
+        self._listeners[name].push(fn);
+        return () => { self._listeners[name] = (self._listeners[name]||[]).filter(f => f !== fn); };
+      }
+    };
+  }
+}
+
+// ── State ──
+let db = null;
+let isLocalMode = false;
+let state = {
+  mdf: [],
+  ads: [],
+  events: [],
+  settings: { rateUSD: 26470, rateAUD: 17500 },
+};
+let currentPage = 'dashboard';
+let adsFilter = 'all';
+let selectedQuarter = 'all';
+const ALL_QUARTERS = ['Q4 FY26','Q1 FY27','Q2 FY27','Q3 FY27','Q4 FY27','Q1 FY28','Q2 FY28'];
+let unsubs = [];
+
+// ── Format helpers ──
+function fmtVND(n) {
+  if (n == null || isNaN(n)) return '—';
+  return new Intl.NumberFormat('vi-VN').format(Math.round(n));
+}
+function fmtUSD(n) { return '$' + new Intl.NumberFormat('en-US').format(n); }
+function fmtPct(n) { return (n * 100).toFixed(1) + '%'; }
+
+// ── Init ──
+async function init() {
+  const dbNs = window.claude ? await window.claude.use('db') : null;
+  if (dbNs) {
+    db = dbNs;
+    isLocalMode = false;
+  } else {
+    db = new LocalDB();
+    isLocalMode = true;
+  }
+  subscribeAll();
+}
+
+function subscribeAll() {
+  // Settings
+  unsubs.push(db.doc('config/settings').onSnapshot(snap => {
+    if (snap.exists) {
+      const d = snap.data();
+      state.settings = { rateUSD: d.rateUSD || 26470, rateAUD: d.rateAUD || 17500 };
+      document.getElementById('rateUSD').value = state.settings.rateUSD;
+      document.getElementById('rateAUD').value = state.settings.rateAUD;
+    }
+    renderAll();
+  }, e => console.error('settings sub error', e)));
+
+  // MDF
+  unsubs.push(db.collection('mdf_claims').onSnapshot(snap => {
+    state.mdf = snap.docs.filter(d => d.exists).map(d => ({ id: d.id, ...d.data() }));
+    document.getElementById('loadingState').hidden = true;
+    showPage(currentPage);
+    renderAll();
+  }, e => console.error('mdf sub error', e)));
+
+  // Ads
+  unsubs.push(db.collection('ads_campaigns').onSnapshot(snap => {
+    state.ads = snap.docs.filter(d => d.exists).map(d => ({ id: d.id, ...d.data() }));
+    renderAll();
+  }, e => console.error('ads sub error', e)));
+
+  // Events
+  unsubs.push(db.collection('events_data').onSnapshot(snap => {
+    state.events = snap.docs.filter(d => d.exists).map(d => ({ id: d.id, ...d.data() }));
+    renderAll();
+  }, e => console.error('events sub error', e)));
+}
+
+// ── Navigation ──
+function switchPage(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.page === page));
+  showPage(page);
+  // Close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function showPage(page) {
+  document.querySelectorAll('.section').forEach(s => s.hidden = true);
+  const el = document.getElementById('page-' + page);
+  if (el) el.hidden = false;
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+function populateQuarterSelects() {
+  const opts = '<option value="all">Tất cả quý</option>' + ALL_QUARTERS.map(q => `<option value="${q}" ${selectedQuarter===q?'selected':''}>${q}</option>`).join('');
+  ['qfDash','qfMdf','qfAds','qfEvents'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.innerHTML = opts; el.value = selectedQuarter; }
+  });
+}
+
+function setQuarter(q) {
+  selectedQuarter = q;
+  populateQuarterSelects();
+  renderAll();
+}
+
+function filterByQuarter(arr) {
+  if (selectedQuarter === 'all') return arr;
+  return arr.filter(item => item.quarter === selectedQuarter);
+}
+
+// ── Chart instances store ──
+const charts = {};
+
+function getChartColors() {
+  const s = getComputedStyle(document.documentElement);
+  return {
+    accent: s.getPropertyValue('--accent').trim() || '#2563eb',
+    green: s.getPropertyValue('--green').trim() || '#16a34a',
+    red: s.getPropertyValue('--red').trim() || '#dc2626',
+    amber: s.getPropertyValue('--amber').trim() || '#d97706',
+    purple: s.getPropertyValue('--purple').trim() || '#7c3aed',
+    fg: s.getPropertyValue('--fg').trim() || '#1a1d23',
+    fgMuted: s.getPropertyValue('--fg-muted').trim() || '#6b7080',
+    border: s.getPropertyValue('--border').trim() || '#e2e4e9',
+    surface: s.getPropertyValue('--surface').trim() || '#ffffff',
+  };
+}
+
+function makeChart(id, config) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const c = getChartColors();
+  // Apply global defaults
+  Chart.defaults.color = c.fgMuted;
+  Chart.defaults.borderColor = c.border;
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  Chart.defaults.font.size = 11;
+  charts[id] = new Chart(el, config);
+  return charts[id];
+}
+
+const VENDOR_COLORS = { Autodesk: '#2563eb', Bluebeam: '#16a34a', Chaos: '#7c3aed', PTC: '#d97706', SketchUp: '#06b6d4', Adobe: '#dc2626', Microsoft: '#f59e0b' };
+function vColor(v) { return VENDOR_COLORS[v] || '#6b7080'; }
+
+// ── Render ──
+function renderAll() {
+  populateQuarterSelects();
+  renderDashboard();
+  renderMDF();
+  renderAds();
+  renderEvents();
+}
+
+function renderDashboard() {
+  const { rateUSD, rateAUD } = state.settings;
+  const c = getChartColors();
+  const fMdf = filterByQuarter(state.mdf);
+  const fAds = filterByQuarter(state.ads);
+  const fEvents = filterByQuarter(state.events);
+
+  document.getElementById('dashSubtitle').textContent = selectedQuarter === 'all' ? 'FY26–FY27 · Tất cả quý' : selectedQuarter;
+
+  let totalMDFvnd = 0;
+  fMdf.forEach(m => {
+    const rate = m.currency === 'AUD' ? rateAUD : rateUSD;
+    totalMDFvnd += (m.amount || 0) * rate;
+  });
+
+  let totalAds = 0;
+  fAds.forEach(a => { totalAds += (a.cost || 0); });
+
+  let totalEventPure = 0;
+  fEvents.forEach(e => { totalEventPure += (e.eventCost || 0); });
+
+  const totalSpent = totalAds + totalEventPure;
+  const remaining = Math.max(totalMDFvnd - totalSpent, 0);
+  const usage = totalMDFvnd > 0 ? totalSpent / totalMDFvnd : 0;
+
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card accent">
+      <div class="label">Tổng MDF được duyệt</div>
+      <div class="value">${fmtVND(totalMDFvnd)}</div>
+      <div class="sub">VNĐ</div>
+    </div>
+    <div class="stat-card red">
+      <div class="label">Tổng chi phí Ads</div>
+      <div class="value">${fmtVND(totalAds)}</div>
+      <div class="sub">${fAds.length} chiến dịch</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="label">Tổng chi phí Event</div>
+      <div class="value">${fmtVND(totalEventPure)}</div>
+      <div class="sub">${fEvents.length} sự kiện</div>
+    </div>
+    <div class="stat-card ${totalMDFvnd - totalSpent >= 0 ? 'green' : 'red'}">
+      <div class="label">MDF còn lại</div>
+      <div class="value">${fmtVND(totalMDFvnd - totalSpent)}</div>
+      <div class="sub">Đã dùng ${fmtPct(usage)}</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${Math.min(usage*100,100)}%;background:${usage > 0.8 ? c.red : usage > 0.5 ? c.amber : c.green}"></div>
+      </div>
+    </div>
+  `;
+
+  // ── Donut: MDF allocation ──
+  makeChart('chartDonut', {
+    type: 'doughnut',
+    data: {
+      labels: ['Chi phí Ads', 'Chi phí Event', 'Còn lại'],
+      datasets: [{
+        data: [totalAds, totalEventPure, remaining],
+        backgroundColor: [c.accent, c.purple, c.green + '40'],
+        borderColor: [c.accent, c.purple, c.green],
+        borderWidth: 1.5,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 14, usePointStyle: true, pointStyleWidth: 10, font: { size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed;
+              const pct = totalMDFvnd > 0 ? (v / totalMDFvnd * 100).toFixed(1) : 0;
+              return ` ${ctx.label}: ${fmtVND(v)} VNĐ (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ── Bar: Vendor spending ──
+  const vendors = {};
+  const vendorsAds = {};
+  const vendorsEvents = {};
+  fAds.forEach(a => {
+    const v = a.vendor || 'Khác';
+    vendorsAds[v] = (vendorsAds[v] || 0) + (a.cost || 0);
+    vendors[v] = 1;
+  });
+  fEvents.forEach(e => {
+    const v = e.vendor || 'Khác';
+    vendorsEvents[v] = (vendorsEvents[v] || 0) + (e.eventCost || 0);
+    vendors[v] = 1;
+  });
+  const vendorKeys = Object.keys(vendors).sort((a,b) => ((vendorsAds[b]||0)+(vendorsEvents[b]||0)) - ((vendorsAds[a]||0)+(vendorsEvents[a]||0)));
+
+  makeChart('chartVendor', {
+    type: 'bar',
+    data: {
+      labels: vendorKeys,
+      datasets: [
+        { label: 'Ads', data: vendorKeys.map(v => vendorsAds[v] || 0), backgroundColor: c.accent, borderRadius: 4 },
+        { label: 'Event', data: vendorKeys.map(v => vendorsEvents[v] || 0), backgroundColor: c.purple, borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { usePointStyle: true, pointStyleWidth: 10, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtVND(ctx.parsed.y)} VNĐ` } }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { ticks: { callback: v => v >= 1e6 ? (v/1e6).toFixed(0) + 'M' : fmtVND(v) }, grid: { color: c.border + '60' } }
+      }
+    }
+  });
+
+  // ── Stacked bar: Quarter spending ──
+  const qSet = {};
+  fAds.forEach(a => { const q = a.quarter || 'N/A'; qSet[q] = qSet[q] || { ads: 0, events: 0 }; qSet[q].ads += (a.cost || 0); });
+  fEvents.forEach(e => { const q = e.quarter || 'N/A'; qSet[q] = qSet[q] || { ads: 0, events: 0 }; qSet[q].events += (e.eventCost || 0); });
+  const qKeys = Object.keys(qSet).sort();
+
+  makeChart('chartQuarter', {
+    type: 'bar',
+    data: {
+      labels: qKeys,
+      datasets: [
+        { label: 'Ads', data: qKeys.map(q => qSet[q].ads), backgroundColor: c.accent, borderRadius: 4 },
+        { label: 'Event', data: qKeys.map(q => qSet[q].events), backgroundColor: c.purple, borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { usePointStyle: true, pointStyleWidth: 10, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtVND(ctx.parsed.y)} VNĐ` } }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, ticks: { callback: v => v >= 1e6 ? (v/1e6).toFixed(0) + 'M' : fmtVND(v) }, grid: { color: c.border + '60' } }
+      }
+    }
+  });
+
+  // ── Grouped bar: CPC & CPL by vendor ──
+  const vendorMetrics = {};
+  fAds.forEach(a => {
+    const v = a.vendor || 'Khác';
+    if (!vendorMetrics[v]) vendorMetrics[v] = { cost: 0, clicks: 0, leads: 0 };
+    vendorMetrics[v].cost += (a.cost || 0);
+    vendorMetrics[v].clicks += (a.clicks || 0);
+    vendorMetrics[v].leads += (a.leads || 0);
+  });
+  const vmKeys = Object.keys(vendorMetrics).sort();
+
+  makeChart('chartCpcCpl', {
+    type: 'bar',
+    data: {
+      labels: vmKeys,
+      datasets: [
+        {
+          label: 'CPC',
+          data: vmKeys.map(v => vendorMetrics[v].clicks > 0 ? Math.round(vendorMetrics[v].cost / vendorMetrics[v].clicks) : 0),
+          backgroundColor: c.accent,
+          borderRadius: 4,
+        },
+        {
+          label: 'CPL',
+          data: vmKeys.map(v => vendorMetrics[v].leads > 0 ? Math.round(vendorMetrics[v].cost / vendorMetrics[v].leads) : 0),
+          backgroundColor: c.amber,
+          borderRadius: 4,
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { usePointStyle: true, pointStyleWidth: 10, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtVND(ctx.parsed.y)} VNĐ` } }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { ticks: { callback: v => fmtVND(v) }, grid: { color: c.border + '60' } }
+      }
+    }
+  });
+
+  // ── Efficiency table ──
+  let totalImpressions = 0, totalClicks = 0, totalLeads = 0;
+  fAds.forEach(a => {
+    totalImpressions += (a.impressions || 0);
+    totalClicks += (a.clicks || 0);
+    totalLeads += (a.leads || 0);
+  });
+  const avgCPC = totalClicks > 0 ? totalAds / totalClicks : 0;
+  const avgCPL = totalLeads > 0 ? totalAds / totalLeads : 0;
+  const ctr = totalImpressions > 0 ? (totalClicks / totalImpressions * 100).toFixed(2) : 0;
+  const cvr = totalClicks > 0 ? (totalLeads / totalClicks * 100).toFixed(2) : 0;
+  document.getElementById('efficiencyTable').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <div style="font-size:11px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Lượt hiển thị</div>
+        <div style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums">${new Intl.NumberFormat('vi-VN').format(totalImpressions)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">Lượt click</div>
+        <div style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums">${new Intl.NumberFormat('vi-VN').format(totalClicks)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">CTR</div>
+        <div style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent)">${ctr}%</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">CVR (Click→Lead)</div>
+        <div style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--green)">${cvr}%</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">CPC trung bình</div>
+        <div style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums">${fmtVND(avgCPC)}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--fg-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px">CPL trung bình</div>
+        <div style="font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--amber)">${fmtVND(avgCPL)}</div>
+      </div>
+    </div>
+  `;
+
+  // ── Donut: Leads by vendor ──
+  const vendorLeads = {};
+  fAds.forEach(a => { const v = a.vendor || 'Khác'; vendorLeads[v] = (vendorLeads[v] || 0) + (a.leads || 0); });
+  const vlKeys = Object.keys(vendorLeads).sort((a,b) => vendorLeads[b] - vendorLeads[a]);
+
+  makeChart('chartLeads', {
+    type: 'doughnut',
+    data: {
+      labels: vlKeys,
+      datasets: [{
+        data: vlKeys.map(v => vendorLeads[v]),
+        backgroundColor: vlKeys.map(v => vColor(v)),
+        borderWidth: 1.5,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, pointStyleWidth: 10, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} leads` } }
+      }
+    }
+  });
+}
+
+function renderMDF() {
+  const { rateUSD, rateAUD } = state.settings;
+  const fMdf = filterByQuarter(state.mdf);
+  let totalUSD = 0, totalAUD = 0, totalVND = 0;
+  fMdf.forEach(m => {
+    if (m.currency === 'AUD') totalAUD += (m.amount || 0);
+    else totalUSD += (m.amount || 0);
+    const rate = m.currency === 'AUD' ? rateAUD : rateUSD;
+    totalVND += (m.amount || 0) * rate;
+  });
+
+  document.getElementById('mdfStats').innerHTML = `
+    <div class="stat-card accent">
+      <div class="label">Tổng MDF (VNĐ)</div>
+      <div class="value">${fmtVND(totalVND)}</div>
+    </div>
+    <div class="stat-card green">
+      <div class="label">Tổng USD</div>
+      <div class="value">${fmtUSD(totalUSD)}</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="label">Tổng AUD</div>
+      <div class="value">A$${new Intl.NumberFormat('en-US').format(totalAUD)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Số MDF Claims</div>
+      <div class="value">${fMdf.length}</div>
+    </div>
+  `;
+
+  const tbody = document.getElementById('mdfTable');
+  if (fMdf.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><p>Chưa có MDF claim nào</p><button class="btn btn-primary btn-sm" onclick="openModal(\'mdf\')">+ Thêm MDF</button></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = fMdf.map(m => {
+    const rate = m.currency === 'AUD' ? rateAUD : rateUSD;
+    const vnd = (m.amount || 0) * rate;
+    const statusBadge = m.status === 'Paid' ? 'badge-green' : m.status === 'Pending' ? 'badge-amber' : 'badge-accent';
+    return `<tr>
+      <td class="mono">${m.claimId || '—'}</td>
+      <td><span class="badge badge-accent">${m.vendor || ''}</span></td>
+      <td class="mono" style="font-size:11px">${m.quarter || '—'}</td>
+      <td>${m.campaign || ''}</td>
+      <td class="mono" style="font-weight:600">${new Intl.NumberFormat('en-US').format(m.amount || 0)}</td>
+      <td>${m.currency || 'USD'}</td>
+      <td class="mono">${fmtVND(vnd)}</td>
+      <td><span class="badge ${statusBadge}">${m.status || 'Pending'}</span></td>
+      <td>
+        <button class="btn btn-sm" onclick="editItem('mdf','${m.id}')">Sửa</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('mdf_claims','${m.id}')">Xóa</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // --- MDF Charts ---
+  const mdfByVendor = {};
+  const mdfByQuarter = {};
+  fMdf.forEach(m => {
+    const v = m.vendor || 'Khác';
+    const rate = m.currency === 'AUD' ? rateAUD : rateUSD;
+    const vnd = (m.amount || 0) * rate;
+    mdfByVendor[v] = (mdfByVendor[v] || 0) + vnd;
+    const q = m.quarter || 'N/A';
+    mdfByQuarter[q] = (mdfByQuarter[q] || 0) + vnd;
+  });
+
+  const mvLabels = Object.keys(mdfByVendor);
+  const mvData = Object.values(mdfByVendor);
+  makeChart('chartMdfVendor', {
+    type: 'doughnut',
+    data: { labels: mvLabels, datasets: [{ data: mvData, backgroundColor: mvLabels.map(v => vColor(v)), borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12, padding: 8 } }, tooltip: { callbacks: { label: ctx => `${ctx.label}: ${fmtVND(ctx.raw)}` } } } }
+  });
+
+  const mqLabels = Object.keys(mdfByQuarter).sort();
+  const mqData = mqLabels.map(q => mdfByQuarter[q]);
+  makeChart('chartMdfQuarter', {
+    type: 'bar',
+    data: { labels: mqLabels, datasets: [{ label: 'MDF (VNĐ)', data: mqData, backgroundColor: getChartColors().accent + 'cc', borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmtVND(ctx.raw) } } }, scales: { y: { beginAtZero: true, ticks: { callback: v => v >= 1e9 ? (v/1e9).toFixed(1)+'B' : v >= 1e6 ? (v/1e6).toFixed(0)+'M' : v } } } }
+  });
+}
+
+function renderAds() {
+  const fAds = filterByQuarter(state.ads);
+  let totalCost = 0, totalLeads = 0, runningCount = 0;
+  fAds.forEach(a => {
+    totalCost += (a.cost || 0);
+    totalLeads += (a.leads || 0);
+    if (a.status === 'Running') runningCount++;
+  });
+
+  document.getElementById('adsStats').innerHTML = `
+    <div class="stat-card accent">
+      <div class="label">Tổng chi Ads</div>
+      <div class="value">${fmtVND(totalCost)}</div>
+    </div>
+    <div class="stat-card green">
+      <div class="label">Tổng Leads</div>
+      <div class="value">${totalLeads}</div>
+    </div>
+    <div class="stat-card amber">
+      <div class="label">Đang chạy</div>
+      <div class="value">${runningCount}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Tổng campaigns</div>
+      <div class="value">${fAds.length}</div>
+    </div>
+  `;
+
+  const filtered = adsFilter === 'all' ? fAds : fAds.filter(a => a.status === adsFilter);
+  const tbody = document.getElementById('adsTable');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><p>Chưa có chiến dịch nào</p><button class="btn btn-primary btn-sm" onclick="openModal(\'ads\')">+ Thêm Campaign</button></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(a => {
+    const cpc = a.clicks > 0 ? (a.cost / a.clicks) : 0;
+    const statusBadge = a.status === 'Running' ? 'badge-green' : a.status === 'Completed' ? 'badge-accent' : 'badge-amber';
+    return `<tr>
+      <td><span class="badge badge-accent">${a.vendor || ''}</span></td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.campaign || ''}</td>
+      <td class="mono">${a.quarter || ''}</td>
+      <td class="mono" style="font-weight:600">${fmtVND(a.cost)}</td>
+      <td class="mono">${new Intl.NumberFormat('vi-VN').format(a.impressions || 0)}</td>
+      <td class="mono">${new Intl.NumberFormat('vi-VN').format(a.clicks || 0)}</td>
+      <td class="mono" style="font-weight:600;color:var(--green)">${a.leads || 0}</td>
+      <td class="mono">${fmtVND(cpc)}</td>
+      <td><span class="badge ${statusBadge}">${a.status || ''}</span></td>
+      <td>
+        <button class="btn btn-sm" onclick="editItem('ads','${a.id}')">Sửa</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('ads_campaigns','${a.id}')">Xóa</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // --- Ads Charts ---
+  const adsByVendor = {};
+  let totalImpressions = 0, totalClicks = 0, totalLeadsAll = 0;
+  fAds.forEach(a => {
+    const v = a.vendor || 'Khác';
+    adsByVendor[v] = (adsByVendor[v] || 0) + (a.cost || 0);
+    totalImpressions += (a.impressions || 0);
+    totalClicks += (a.clicks || 0);
+    totalLeadsAll += (a.leads || 0);
+  });
+
+  const avLabels = Object.keys(adsByVendor);
+  const avData = avLabels.map(v => adsByVendor[v]);
+  makeChart('chartAdsByVendor', {
+    type: 'bar',
+    data: { labels: avLabels, datasets: [{ label: 'Chi phí (VNĐ)', data: avData, backgroundColor: avLabels.map(v => vColor(v) + 'cc'), borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => fmtVND(ctx.raw) } } }, scales: { x: { beginAtZero: true, ticks: { callback: v => v >= 1e9 ? (v/1e9).toFixed(1)+'B' : v >= 1e6 ? (v/1e6).toFixed(0)+'M' : v } } } }
+  });
+
+  const c = getChartColors();
+  makeChart('chartFunnel', {
+    type: 'bar',
+    data: { labels: ['Hiển thị', 'Clicks', 'Leads'], datasets: [{ data: [totalImpressions, totalClicks, totalLeadsAll], backgroundColor: [c.accent + 'cc', c.amber + 'cc', c.green + 'cc'], borderRadius: 4 }] },
+    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => new Intl.NumberFormat('vi-VN').format(ctx.raw) } } }, scales: { x: { type: 'logarithmic', ticks: { callback: v => v >= 1e6 ? (v/1e6).toFixed(0)+'M' : v >= 1e3 ? (v/1e3).toFixed(0)+'K' : v } } } }
+  });
+}
+
+function switchAdsTab(filter) {
+  adsFilter = filter;
+  document.querySelectorAll('#adsTabBar .tab-btn').forEach(b => b.classList.toggle('active', b.textContent.trim() === (filter === 'all' ? 'Tất cả' : filter === 'Running' ? 'Đang chạy' : 'Hoàn thành')));
+  renderAds();
+}
+
+function renderEvents() {
+  const fEvents = filterByQuarter(state.events);
+  let totalPO = 0, totalEventPure = 0;
+  fEvents.forEach(e => {
+    totalPO += (e.totalPO || 0);
+    totalEventPure += (e.eventCost || 0);
+  });
+
+  document.getElementById('eventStats').innerHTML = `
+    <div class="stat-card accent">
+      <div class="label">Tổng chi PO</div>
+      <div class="value">${fmtVND(totalPO)}</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="label">Chi phí Event thuần</div>
+      <div class="value">${fmtVND(totalEventPure)}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Tổng sự kiện</div>
+      <div class="value">${fEvents.length}</div>
+    </div>
+  `;
+
+  const tbody = document.getElementById('eventsTable');
+  if (fEvents.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11"><div class="empty-state"><p>Chưa có sự kiện nào</p><button class="btn btn-primary btn-sm" onclick="openModal(\'events\')">+ Thêm sự kiện</button></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = fEvents.map(e => {
+    const typeBadge = e.fundType === 'MDF' ? 'badge-green' : 'badge-amber';
+    return `<tr>
+      <td class="mono">${e.poCode || '—'}</td>
+      <td>${e.name || ''}</td>
+      <td class="mono" style="font-size:11px">${e.quarter || '—'}</td>
+      <td class="mono">${e.date || ''}</td>
+      <td><span class="badge ${typeBadge}">${e.fundType || 'VCD'}</span></td>
+      <td class="mono" style="font-weight:600">${fmtVND(e.totalPO)}</td>
+      <td class="mono">${fmtVND(e.adsCostInPO)}</td>
+      <td class="mono" style="font-weight:600;color:var(--purple)">${fmtVND(e.eventCost)}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.note || ''}</td>
+      <td>
+        <button class="btn btn-sm" onclick="editItem('events','${e.id}')">Sửa</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('events_data','${e.id}')">Xóa</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Modals ──
+function openModal(type, editData) {
+  let html = '';
+  if (type === 'mdf') {
+    html = `
+      <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+          <h3>${editData ? 'Sửa' : 'Thêm'} MDF Claim</h3>
+          <form id="modalForm" onsubmit="saveMDF(event, ${editData ? `'${editData.id}'` : 'null'})">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Claim ID</label>
+                <input id="f_claimId" value="${editData?.claimId || ''}" placeholder="Q1-AEC">
+              </div>
+              <div class="form-group">
+                <label>Hãng</label>
+                <select id="f_vendor" onchange="toggleCustomVendor()">
+                  <option ${editData?.vendor==='AUTODESK'?'selected':''}>AUTODESK</option>
+                  <option ${editData?.vendor==='BLUEBEAM'?'selected':''}>BLUEBEAM</option>
+                  <option ${editData?.vendor==='CHAOS'?'selected':''}>CHAOS</option>
+                  <option ${editData?.vendor==='PTC'?'selected':''}>PTC</option>
+                  <option ${editData?.vendor==='ADOBE'?'selected':''}>ADOBE</option>
+                  <option ${editData?.vendor==='MICROSOFT'?'selected':''}>MICROSOFT</option>
+                  <option ${editData?.vendor==='SKETCHUP'?'selected':''}>SKETCHUP</option>
+                  <option value="__custom__" ${editData?.vendor && !['AUTODESK','BLUEBEAM','CHAOS','PTC','ADOBE','MICROSOFT','SKETCHUP'].includes(editData.vendor)?'selected':''}>Nhập hãng khác...</option>
+                </select>
+                <input id="f_vendorCustom" placeholder="Tên hãng" value="${editData?.vendor && !['AUTODESK','BLUEBEAM','CHAOS','PTC','ADOBE','MICROSOFT','SKETCHUP'].includes(editData?.vendor) ? editData.vendor : ''}" style="display:${editData?.vendor && !['AUTODESK','BLUEBEAM','CHAOS','PTC','ADOBE','MICROSOFT','SKETCHUP'].includes(editData?.vendor) ? 'block' : 'none'};margin-top:6px">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Quý</label>
+                <select id="f_quarter">
+                  <option ${editData?.quarter==='Q4 FY26'?'selected':''}>Q4 FY26</option>
+                  <option ${editData?.quarter==='Q1 FY27'?'selected':''}>Q1 FY27</option>
+                  <option ${editData?.quarter==='Q2 FY27'?'selected':''}>Q2 FY27</option>
+                  <option ${editData?.quarter==='Q3 FY27'?'selected':''}>Q3 FY27</option>
+                  <option ${editData?.quarter==='Q4 FY27'?'selected':''}>Q4 FY27</option>
+                  <option ${editData?.quarter==='Q1 FY28'?'selected':''}>Q1 FY28</option>
+                  <option ${editData?.quarter==='Q2 FY28'?'selected':''}>Q2 FY28</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Tên chiến dịch</label>
+                <input id="f_campaign" required value="${editData?.campaign || ''}" placeholder="AEC Ads Campaign">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Số tiền</label>
+                <input id="f_amount" type="number" required value="${editData?.amount || ''}" placeholder="800">
+              </div>
+              <div class="form-group">
+                <label>Tiền tệ</label>
+                <select id="f_currency">
+                  <option ${editData?.currency==='USD' || !editData ? 'selected':''}>USD</option>
+                  <option ${editData?.currency==='AUD'?'selected':''}>AUD</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Trạng thái</label>
+              <select id="f_status">
+                <option ${editData?.status==='Paid'?'selected':''}>Paid</option>
+                <option ${editData?.status==='Pending'?'selected':''}>Pending</option>
+                <option ${editData?.status==='Submitted'?'selected':''}>Submitted</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn" onclick="closeModal()">Hủy</button>
+              <button type="submit" class="btn btn-primary">Lưu</button>
+            </div>
+          </form>
+        </div>
+      </div>`;
+  } else if (type === 'ads') {
+    html = `
+      <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+          <h3>${editData ? 'Sửa' : 'Thêm'} Campaign Ads</h3>
+          <form id="modalForm" onsubmit="saveAds(event, ${editData ? `'${editData.id}'` : 'null'})">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Hãng</label>
+                <select id="f_vendor" onchange="toggleCustomVendor()">
+                  <option ${editData?.vendor==='AUTODESK'?'selected':''}>AUTODESK</option>
+                  <option ${editData?.vendor==='BLUEBEAM'?'selected':''}>BLUEBEAM</option>
+                  <option ${editData?.vendor==='CHAOS'?'selected':''}>CHAOS</option>
+                  <option ${editData?.vendor==='PTC'?'selected':''}>PTC</option>
+                  <option ${editData?.vendor==='ADOBE'?'selected':''}>ADOBE</option>
+                  <option ${editData?.vendor==='MICROSOFT'?'selected':''}>MICROSOFT</option>
+                  <option ${editData?.vendor==='SKETCHUP'?'selected':''}>SKETCHUP</option>
+                  <option value="__custom__" ${editData?.vendor && !['AUTODESK','BLUEBEAM','CHAOS','PTC','ADOBE','MICROSOFT','SKETCHUP'].includes(editData.vendor)?'selected':''}>Nhập hãng khác...</option>
+                </select>
+                <input id="f_vendorCustom" class="mt-4" placeholder="Tên hãng" value="${editData?.vendor && !['AUTODESK','BLUEBEAM','CHAOS','PTC','ADOBE','MICROSOFT','SKETCHUP'].includes(editData?.vendor) ? editData.vendor : ''}" style="display:${editData?.vendor && !['AUTODESK','BLUEBEAM','CHAOS','PTC','ADOBE','MICROSOFT','SKETCHUP'].includes(editData?.vendor) ? 'block' : 'none'};margin-top:6px">
+              </div>
+              <div class="form-group">
+                <label>Quý</label>
+                <select id="f_quarter">
+                  <option ${editData?.quarter==='Q4 FY26'?'selected':''}>Q4 FY26</option>
+                  <option ${editData?.quarter==='Q1 FY27'?'selected':''}>Q1 FY27</option>
+                  <option ${editData?.quarter==='Q2 FY27'?'selected':''}>Q2 FY27</option>
+                  <option ${editData?.quarter==='Q3 FY27'?'selected':''}>Q3 FY27</option>
+                  <option ${editData?.quarter==='Q4 FY27'?'selected':''}>Q4 FY27</option>
+                  <option ${editData?.quarter==='Q1 FY28'?'selected':''}>Q1 FY28</option>
+                  <option ${editData?.quarter==='Q2 FY28'?'selected':''}>Q2 FY28</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Tên chiến dịch</label>
+              <input id="f_campaign" required value="${editData?.campaign || ''}" placeholder="FY27Q2 - AutoCAD 2027 r3">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Chi phí (VNĐ)</label>
+                <input id="f_cost" type="number" required value="${editData?.cost || ''}" placeholder="3000000">
+              </div>
+              <div class="form-group">
+                <label>Trạng thái</label>
+                <select id="f_status">
+                  <option ${editData?.status==='Running'?'selected':''}>Running</option>
+                  <option ${editData?.status==='Completed'||!editData?'selected':''}>Completed</option>
+                  <option ${editData?.status==='Paused'?'selected':''}>Paused</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Lượt hiển thị</label>
+                <input id="f_impressions" type="number" value="${editData?.impressions || 0}">
+              </div>
+              <div class="form-group">
+                <label>Lượt click</label>
+                <input id="f_clicks" type="number" value="${editData?.clicks || 0}">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Leads</label>
+                <input id="f_leads" type="number" value="${editData?.leads || 0}">
+              </div>
+              <div class="form-group">
+                <label>MDF Claim ID (nếu có)</label>
+                <input id="f_mdfClaimId" value="${editData?.mdfClaimId || ''}">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Ngày bắt đầu</label>
+                <input id="f_startDate" value="${editData?.startDate || ''}" placeholder="07/07">
+              </div>
+              <div class="form-group">
+                <label>Ngày kết thúc</label>
+                <input id="f_endDate" value="${editData?.endDate || ''}" placeholder="31/07">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn" onclick="closeModal()">Hủy</button>
+              <button type="submit" class="btn btn-primary">Lưu</button>
+            </div>
+          </form>
+        </div>
+      </div>`;
+  } else if (type === 'events') {
+    html = `
+      <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+          <h3>${editData ? 'Sửa' : 'Thêm'} Sự kiện</h3>
+          <form id="modalForm" onsubmit="saveEvent(event, ${editData ? `'${editData.id}'` : 'null'})">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Mã PO</label>
+                <input id="f_poCode" value="${editData?.poCode || ''}" placeholder="260627-ADSK-082">
+              </div>
+              <div class="form-group">
+                <label>Loại quỹ</label>
+                <select id="f_fundType">
+                  <option ${editData?.fundType==='MDF'?'selected':''}>MDF</option>
+                  <option ${editData?.fundType==='VCD'||!editData?'selected':''}>VCD</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Tên sự kiện</label>
+              <input id="f_name" required value="${editData?.name || ''}" placeholder="Event AEC ADSK 27/6">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Ngày</label>
+                <input id="f_date" value="${editData?.date || ''}" placeholder="27/06/2026">
+              </div>
+              <div class="form-group">
+                <label>Quý</label>
+                <select id="f_quarter">
+                  <option ${editData?.quarter==='Q4 FY26'?'selected':''}>Q4 FY26</option>
+                  <option ${editData?.quarter==='Q1 FY27'?'selected':''}>Q1 FY27</option>
+                  <option ${editData?.quarter==='Q2 FY27'?'selected':''}>Q2 FY27</option>
+                  <option ${editData?.quarter==='Q3 FY27'?'selected':''}>Q3 FY27</option>
+                  <option ${editData?.quarter==='Q4 FY27'?'selected':''}>Q4 FY27</option>
+                  <option ${editData?.quarter==='Q1 FY28'?'selected':''}>Q1 FY28</option>
+                  <option ${editData?.quarter==='Q2 FY28'?'selected':''}>Q2 FY28</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Hãng</label>
+                <select id="f_vendor" onchange="toggleCustomVendor()">
+                  <option ${editData?.vendor==='AUTODESK'?'selected':''}>AUTODESK</option>
+                  <option ${editData?.vendor==='BLUEBEAM'?'selected':''}>BLUEBEAM</option>
+                  <option ${editData?.vendor==='CHAOS'?'selected':''}>CHAOS</option>
+                  <option ${editData?.vendor==='PTC'?'selected':''}>PTC</option>
+                  <option ${editData?.vendor==='ADOBE'?'selected':''}>ADOBE</option>
+                  <option ${editData?.vendor==='MICROSOFT'?'selected':''}>MICROSOFT</option>
+                  <option ${editData?.vendor==='SKETCHUP'?'selected':''}>SKETCHUP</option>
+                  <option value="__custom__" ${editData?.vendor && !['AUTODESK','BLUEBEAM','CHAOS','PTC','ADOBE','MICROSOFT','SKETCHUP'].includes(editData.vendor)?'selected':''}>Nhập hãng khác...</option>
+                </select>
+                <input id="f_vendorCustom" placeholder="Tên hãng" value="${editData?.vendor && !['AUTODESK','BLUEBEAM','CHAOS','PTC','ADOBE','MICROSOFT','SKETCHUP'].includes(editData?.vendor) ? editData.vendor : ''}" style="display:${editData?.vendor && !['AUTODESK','BLUEBEAM','CHAOS','PTC','ADOBE','MICROSOFT','SKETCHUP'].includes(editData?.vendor) ? 'block' : 'none'};margin-top:6px">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Tổng chi phí PO (VNĐ)</label>
+              <input id="f_totalPO" type="number" required value="${editData?.totalPO || ''}" placeholder="41561143">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Ads trong PO (VNĐ)</label>
+                <input id="f_adsCostInPO" type="number" value="${editData?.adsCostInPO || 0}" placeholder="16490645">
+              </div>
+              <div class="form-group">
+                <label>MDF Fund (nếu có)</label>
+                <input id="f_mdfFund" value="${editData?.mdfFund || ''}" placeholder="$2,000">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Ghi chú</label>
+              <input id="f_note" value="${editData?.note || ''}" placeholder="FB Ads included in PO">
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn" onclick="closeModal()">Hủy</button>
+              <button type="submit" class="btn btn-primary">Lưu</button>
+            </div>
+          </form>
+        </div>
+      </div>`;
+  }
+  document.getElementById('modalContainer').innerHTML = html;
+}
+
+function closeModal() {
+  document.getElementById('modalContainer').innerHTML = '';
+}
+
+function toggleCustomVendor() {
+  const sel = document.getElementById('f_vendor');
+  const inp = document.getElementById('f_vendorCustom');
+  if (inp) inp.style.display = sel.value === '__custom__' ? 'block' : 'none';
+}
+function getVendorValue() {
+  const sel = document.getElementById('f_vendor');
+  if (sel.value === '__custom__') {
+    const v = (document.getElementById('f_vendorCustom')?.value || '').trim().toUpperCase();
+    return v || 'KHÁC';
+  }
+  return sel.value;
+}
+
+// ── Save functions ──
+async function saveMDF(e, editId) {
+  e.preventDefault();
+  const data = {
+    claimId: document.getElementById('f_claimId').value,
+    vendor: getVendorValue(),
+    quarter: document.getElementById('f_quarter').value,
+    campaign: document.getElementById('f_campaign').value,
+    amount: parseFloat(document.getElementById('f_amount').value) || 0,
+    currency: document.getElementById('f_currency').value,
+    status: document.getElementById('f_status').value,
+    updatedAt: new Date().toISOString(),
+  };
+  try {
+    if (editId) await db.doc('mdf_claims/' + editId).set(data);
+    else await db.collection('mdf_claims').add(data);
+    closeModal();
+    toast(editId ? 'Đã cập nhật' : 'Đã thêm MDF claim');
+  } catch(err) { toast('Lỗi: ' + err.message); }
+}
+
+async function saveAds(e, editId) {
+  e.preventDefault();
+  const data = {
+    vendor: getVendorValue(),
+    quarter: document.getElementById('f_quarter').value,
+    campaign: document.getElementById('f_campaign').value,
+    cost: parseFloat(document.getElementById('f_cost').value) || 0,
+    status: document.getElementById('f_status').value,
+    impressions: parseInt(document.getElementById('f_impressions').value) || 0,
+    clicks: parseInt(document.getElementById('f_clicks').value) || 0,
+    leads: parseInt(document.getElementById('f_leads').value) || 0,
+    mdfClaimId: document.getElementById('f_mdfClaimId').value,
+    startDate: document.getElementById('f_startDate').value,
+    endDate: document.getElementById('f_endDate').value,
+    updatedAt: new Date().toISOString(),
+  };
+  try {
+    if (editId) await db.doc('ads_campaigns/' + editId).set(data);
+    else await db.collection('ads_campaigns').add(data);
+    closeModal();
+    toast(editId ? 'Đã cập nhật' : 'Đã thêm campaign');
+  } catch(err) { toast('Lỗi: ' + err.message); }
+}
+
+async function saveEvent(e, editId) {
+  e.preventDefault();
+  const totalPO = parseFloat(document.getElementById('f_totalPO').value) || 0;
+  const adsCostInPO = parseFloat(document.getElementById('f_adsCostInPO').value) || 0;
+  const data = {
+    poCode: document.getElementById('f_poCode').value,
+    name: document.getElementById('f_name').value,
+    date: document.getElementById('f_date').value,
+    quarter: document.getElementById('f_quarter').value,
+    fundType: document.getElementById('f_fundType').value,
+    vendor: getVendorValue(),
+    totalPO: totalPO,
+    adsCostInPO: adsCostInPO,
+    eventCost: totalPO - adsCostInPO,
+    mdfFund: document.getElementById('f_mdfFund').value,
+    note: document.getElementById('f_note').value,
+    updatedAt: new Date().toISOString(),
+  };
+  try {
+    if (editId) await db.doc('events_data/' + editId).set(data);
+    else await db.collection('events_data').add(data);
+    closeModal();
+    toast(editId ? 'Đã cập nhật' : 'Đã thêm sự kiện');
+  } catch(err) { toast('Lỗi: ' + err.message); }
+}
+
+async function saveSettings() {
+  const data = {
+    rateUSD: parseFloat(document.getElementById('rateUSD').value) || 26470,
+    rateAUD: parseFloat(document.getElementById('rateAUD').value) || 17500,
+  };
+  try {
+    await db.doc('config/settings').set(data);
+    toast('Đã lưu tỷ giá');
+  } catch(err) { toast('Lỗi: ' + err.message); }
+}
+
+function editItem(type, id) {
+  const list = type === 'mdf' ? state.mdf : type === 'ads' ? state.ads : state.events;
+  const item = list.find(i => i.id === id);
+  if (item) openModal(type, item);
+}
+
+async function deleteItem(collection, id) {
+  try {
+    await db.doc(collection + '/' + id).delete();
+    toast('Đã xóa');
+  } catch(err) { toast('Lỗi: ' + err.message); }
+}
+
+// ── Import / Export ──
+async function importExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('importStatus');
+  statusEl.hidden = false;
+  statusEl.textContent = 'Đang đọc file...';
+  try {
+    const data = await file.arrayBuffer();
+    const wb = XLSX.read(data, { type: 'array' });
+    let mdfCount = 0, adsCount = 0, evtCount = 0;
+
+    // Try to find MDF sheet
+    const mdfSheet = wb.Sheets['MDF'] || wb.Sheets['MDF FUND TRACKING'] || wb.Sheets['MDF FUND'];
+    if (mdfSheet) {
+      const rows = XLSX.utils.sheet_to_json(mdfSheet, { defval: '' });
+      for (const r of rows) {
+        const claimId = r['CLAIM/MDF'] || r['Claim ID'] || r['claimId'] || '';
+        const vendor = r['HÃNG'] || r['Vendor'] || r['vendor'] || '';
+        if (!claimId && !vendor) continue;
+        const amount = parseFloat(r['SỐ TIỀN'] || r['Amount'] || r['amount'] || 0);
+        const currency = r['TIỀN TỆ'] || r['Currency'] || r['currency'] || 'USD';
+        const campaign = r['TÊN CHIẾN DỊCH'] || r['Campaign'] || r['campaign'] || '';
+        const quarter = r['QUÝ'] || r['Quarter'] || r['quarter'] || deriveQuarterFromClaim(claimId);
+        const status = r['TRẠNG THÁI'] || r['Status'] || r['status'] || 'Paid';
+        await db.collection('mdf_claims').add({
+          claimId, vendor: vendor.toUpperCase(), quarter, campaign, amount, currency, status, updatedAt: new Date().toISOString()
+        });
+        mdfCount++;
+      }
+    }
+
+    // Try to find ADS sheet
+    const adsSheet = wb.Sheets['ADS'] || wb.Sheets['ADS COST DETAIL'] || wb.Sheets['ADS COST'];
+    if (adsSheet) {
+      const rows = XLSX.utils.sheet_to_json(adsSheet, { defval: '' });
+      for (const r of rows) {
+        const campaign = r['CHIẾN DỊCH'] || r['Campaign'] || r['campaign'] || '';
+        const vendor = r['HÃNG'] || r['Vendor'] || r['vendor'] || '';
+        if (!campaign && !vendor) continue;
+        const cost = parseFloat(r['CHI PHÍ (VNĐ)'] || r['Cost'] || r['cost'] || 0);
+        if (!cost && cost !== 0) continue;
+        const quarter = r['NGÀY BẮT ĐẦU'] || r['Quarter'] || r['quarter'] || '';
+        const dateRange = r['NGÀY KẾT THÚC'] || r['Date'] || '';
+        const status = r['TRẠNG THÁI'] || r['Status'] || r['status'] || 'Completed';
+        let startDate = '', endDate = '';
+        if (typeof dateRange === 'string' && dateRange.includes('→')) {
+          const parts = dateRange.split('→').map(s => s.trim());
+          startDate = parts[0] || '';
+          endDate = parts[1] || '';
+        }
+        await db.collection('ads_campaigns').add({
+          vendor: vendor.toUpperCase(), quarter, campaign, cost, status, impressions: 0, clicks: 0, leads: 0,
+          mdfClaimId: '', startDate, endDate, updatedAt: new Date().toISOString()
+        });
+        adsCount++;
+      }
+    }
+
+    // Try to find Events sheet
+    const evtSheet = wb.Sheets['EVENTS'] || wb.Sheets['EVENT COST DETAIL'] || wb.Sheets['EVENT COST'];
+    if (evtSheet) {
+      const rows = XLSX.utils.sheet_to_json(evtSheet, { defval: '' });
+      for (const r of rows) {
+        const poCode = r['MÃ PO'] || r['PO Code'] || r['poCode'] || '';
+        const name = r['TÊN SỰ KIỆN'] || r['Event Name'] || r['name'] || '';
+        if (!poCode && !name) continue;
+        let dateVal = r['NGÀY'] || r['Date'] || r['date'] || '';
+        if (dateVal instanceof Date) dateVal = dateVal.toISOString().slice(0, 10);
+        else if (typeof dateVal === 'string' && dateVal.includes('/')) {
+          const p = dateVal.split('/');
+          if (p.length === 3) dateVal = p[2] + '-' + p[1].padStart(2,'0') + '-' + p[0].padStart(2,'0');
+        }
+        const fundType = r['LOẠI'] || r['Type'] || r['fundType'] || 'VCD';
+        const vendor = deriveVendorFromPO(poCode);
+        const quarter = r['QUÝ'] || r['Quarter'] || r['quarter'] || deriveQuarterFromDate(dateVal);
+        const totalPO = parseFloat(r['TỔNG CHI PHÍ PO'] || r['Total PO'] || r['totalPO'] || 0);
+        const adsCostInPO = parseFloat(r['CHI PHÍ ADS TRONG PO'] || r['Ads Cost'] || r['adsCostInPO'] || 0);
+        const eventCost = totalPO - adsCostInPO;
+        const mdfFund = r['MDF FUND'] || r['MDF Fund'] || r['mdfFund'] || '';
+        const note = r['GHI CHÚ'] || r['Note'] || r['note'] || '';
+        await db.collection('events_data').add({
+          poCode, name, date: dateVal, quarter, fundType, vendor, totalPO, adsCostInPO, eventCost, mdfFund, note, updatedAt: new Date().toISOString()
+        });
+        evtCount++;
+      }
+    }
+
+    statusEl.innerHTML = `✅ Import xong: <b>${mdfCount}</b> MDF, <b>${adsCount}</b> Ads, <b>${evtCount}</b> Events`;
+    toast(`Import xong: ${mdfCount} MDF, ${adsCount} Ads, ${evtCount} Events`);
+  } catch (err) {
+    statusEl.textContent = '❌ Lỗi: ' + err.message;
+    toast('Lỗi import: ' + err.message);
+  }
+  input.value = '';
+}
+
+function deriveQuarterFromClaim(claimId) {
+  if (!claimId) return '';
+  if (claimId.startsWith('Q1-')) return 'Q1 FY27';
+  if (claimId.startsWith('Q2-')) return 'Q2 FY27';
+  if (claimId.startsWith('Q3-')) return 'Q3 FY27';
+  if (claimId.startsWith('Q4-')) return 'Q4 FY26';
+  return '';
+}
+
+function deriveVendorFromPO(po) {
+  if (!po) return '';
+  const u = po.toUpperCase();
+  if (u.includes('ADSK') || u.includes('AUTODESK')) return 'AUTODESK';
+  if (u.includes('BLUEBEAM')) return 'BLUEBEAM';
+  if (u.includes('CHAOS')) return 'CHAOS';
+  if (u.includes('PTC')) return 'PTC';
+  if (u.includes('ADOBE')) return 'ADOBE';
+  if (u.includes('VCD')) return 'VIETCAD';
+  return '';
+}
+
+function deriveQuarterFromDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  const m = d.getMonth() + 1; // 1-12
+  const y = d.getFullYear();
+  // Autodesk FY: Feb-Jan. FY27 = Feb 2026 - Jan 2027
+  if (y === 2025 && m >= 2 && m <= 4) return 'Q1 FY26';
+  if (y === 2025 && m >= 5 && m <= 7) return 'Q2 FY26';
+  if (y === 2025 && m >= 8 && m <= 10) return 'Q3 FY26';
+  if ((y === 2025 && m >= 11) || (y === 2026 && m === 1)) return 'Q4 FY26';
+  if (y === 2026 && m >= 2 && m <= 4) return 'Q1 FY27';
+  if (y === 2026 && m >= 5 && m <= 7) return 'Q2 FY27';
+  if (y === 2026 && m >= 8 && m <= 10) return 'Q3 FY27';
+  if ((y === 2026 && m >= 11) || (y === 2027 && m === 1)) return 'Q4 FY27';
+  if (y === 2027 && m >= 2 && m <= 4) return 'Q1 FY28';
+  if (y === 2027 && m >= 5 && m <= 7) return 'Q2 FY28';
+  return '';
+}
+
+function exportExcel() {
+  const wb = XLSX.utils.book_new();
+  // MDF
+  const mdfData = state.mdf.map(m => ({
+    'Claim ID': m.claimId, 'Hãng': m.vendor, 'Quý': m.quarter, 'Chiến dịch': m.campaign,
+    'Số tiền': m.amount, 'Tiền tệ': m.currency,
+    'Quy đổi VNĐ': m.amount * (m.currency === 'AUD' ? state.settings.rateAUD : state.settings.rateUSD),
+    'Trạng thái': m.status
+  }));
+  if (mdfData.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mdfData), 'MDF');
+
+  // Ads
+  const adsData = state.ads.map(a => ({
+    'Hãng': a.vendor, 'Quý': a.quarter, 'Chiến dịch': a.campaign, 'Chi phí VNĐ': a.cost,
+    'Trạng thái': a.status, 'Ngày bắt đầu': a.startDate, 'Ngày kết thúc': a.endDate,
+    'Impressions': a.impressions, 'Clicks': a.clicks, 'Leads': a.leads
+  }));
+  if (adsData.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(adsData), 'ADS');
+
+  // Events
+  const evtData = state.events.map(e => ({
+    'Mã PO': e.poCode, 'Tên sự kiện': e.name, 'Quý': e.quarter, 'Ngày': e.date,
+    'Loại': e.fundType, 'Tổng PO': e.totalPO, 'Ads trong PO': e.adsCostInPO,
+    'Chi phí thuần': e.eventCost, 'MDF Fund': e.mdfFund, 'Ghi chú': e.note
+  }));
+  if (evtData.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(evtData), 'EVENTS');
+
+  XLSX.writeFile(wb, 'VietCAD_MDF_Tracker_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  toast('Đã export file Excel');
+}
+
+async function clearAllData() {
+  if (!confirm('Xóa toàn bộ dữ liệu? Thao tác này không thể hoàn tác.')) return;
+  try {
+    for (const m of state.mdf) await db.doc('mdf_claims/' + m.id).delete();
+    for (const a of state.ads) await db.doc('ads_campaigns/' + a.id).delete();
+    for (const e of state.events) await db.doc('events_data/' + e.id).delete();
+    if (isLocalMode) {
+      try { localStorage.removeItem('mdf_mdf_claims'); localStorage.removeItem('mdf_ads_campaigns'); localStorage.removeItem('mdf_events_data'); } catch {}
+      state.mdf = []; state.ads = []; state.events = [];
+      renderAll();
+    }
+    toast('Đã xóa toàn bộ dữ liệu');
+  } catch (err) { toast('Lỗi: ' + err.message); }
+}
+
+// ── Toast ──
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// ── Kick off ──
+init();
+</script>
+
+</body></html>
